@@ -34,13 +34,13 @@ COPY . .
 COPY --from=0 /backend/VERSION /backend/.bumpversion.cfg ./
 RUN rm -rf /backend/.git/
 
-EXPOSE 5001
+EXPOSE 5010
 
 # uWSGI configuration (customize as needed):
-ENV FLASK_APP=app.py UWSGI_WSGI_FILE=app.py UWSGI_SOCKET=:3031 UWSGI_HTTP=:5001 UWSGI_VIRTUALENV=/venv UWSGI_MASTER=1 UWSGI_WORKERS=4 UWSGI_THREADS=8 UWSGI_LAZY_APPS=1 UWSGI_WSGI_ENV_BEHAVIOR=holy PYTHONDONTWRITEBYTECODE=1
+ENV FLASK_APP=app.py UWSGI_WSGI_FILE=app.py UWSGI_SOCKET=:3031 UWSGI_HTTP=:5010 UWSGI_VIRTUALENV=/venv UWSGI_MASTER=1 UWSGI_WORKERS=4 UWSGI_THREADS=8 UWSGI_LAZY_APPS=1 UWSGI_WSGI_ENV_BEHAVIOR=holy PYTHONDONTWRITEBYTECODE=1
 ENV PATH="/venv/bin:${PATH}"
 ENV PYTHONPATH="/backend"
 
 # Start uWSGI
 CMD ["/venv/bin/uwsgi", "--http-auto-chunked", "--http-keepalive"]
-HEALTHCHECK --interval=1m --timeout=5s --retries=2 CMD ["curl","-s", "-f", "--show-error","http://localhost:5001/"]
+HEALTHCHECK --interval=1m --timeout=5s --retries=2 CMD ["curl","-s", "-f", "--show-error","http://localhost:5010/"]
