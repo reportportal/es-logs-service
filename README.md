@@ -1,7 +1,7 @@
 # es-logs-service
 
 Curl requests to check functionality (you need to setup your own ideas in several queries):
-`
+```
 
 curl -XPOST localhost:5010/delete_project -d "10" -H "Content-Type: application/json"
 
@@ -13,4 +13,4 @@ curl -XPOST localhost:5010/delete_logs -H "Content-Type: application/json" -d "{
 
 curl -XPOST localhost:5010/search_logs -H "Content-Type: application/json" -d "{\"query\": \"test\", \"project\":10}"
 
-`
+```
