@@ -91,6 +91,12 @@ def get_logs_by_test_item():
         [log.json() for log in _es_client.get_logs_by_test_item(get_request_data(request))])
 
 
+@application.route('/delete_logs', methods=['POST'])
+def delete_logs():
+    _es_client = es_client.EsClient(APP_CONFIG)
+    return jsonify(_es_client.delete_logs(get_request_data(request)))
+
+
 def start_http_server():
     application.logger.setLevel(logging.INFO)
     logger.info("Started http server")
