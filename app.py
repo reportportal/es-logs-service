@@ -18,13 +18,15 @@ import logging
 import logging.config
 from sys import exit
 import os
-from flask import Flask
+import json
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-
+from commons import es_client
 
 APP_CONFIG = {
     "esHost":            os.getenv("ES_HOSTS", "http://elasticsearch:9200").strip("/").strip("\\"),
-    "logLevel":          os.getenv("LOGGING_LEVEL", "DEBUG").strip()
+    "logLevel":          os.getenv("LOGGING_LEVEL", "DEBUG").strip(),
+    "esIndexPrefix":     os.getenv("ES_INDEX_PREFIX", "rp_").strip()
 }
 
 
@@ -58,15 +60,27 @@ application = create_application()
 CORS(application)
 
 
+def get_request_data(request):
+    data = request.data.decode("utf-8")
+    data = json.loads(data, strict=False)
+    return data
+
+
 @application.route('/', methods=['GET'])
 def test():
     return "Hello world!"
 
 
+@application.route('/delete_project', methods=['POST'])
+def delete_project():
+    _es_client = es_client.EsClient(APP_CONFIG)
+    return jsonify(_es_client.delete_index(get_request_data(request)))
+
+
 def start_http_server():
     application.logger.setLevel(logging.INFO)
     logger.info("Started http server")
-    application.run(host='0.0.0.0', port=5001, use_reloader=False)
+    application.run(host='0.0.0.0', port=5010, use_reloader=False)
 
 
 if __name__ == '__main__':
@@ -74,5 +88,5 @@ if __name__ == '__main__':
 
     start_http_server()
 
-    logger.info("The analyzer has finished")
+    logger.info("The es log service has finished")
     exit(0)
