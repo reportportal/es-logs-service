@@ -77,6 +77,20 @@ def delete_project():
     return jsonify(_es_client.delete_index(get_request_data(request)))
 
 
+@application.route('/get_logs_by_ids', methods=['POST'])
+def get_logs_by_ids():
+    _es_client = es_client.EsClient(APP_CONFIG)
+    return jsonify(
+        [log.json() for log in _es_client.get_logs_by_ids(get_request_data(request))])
+
+
+@application.route('/get_logs_by_test_item', methods=['POST'])
+def get_logs_by_test_item():
+    _es_client = es_client.EsClient(APP_CONFIG)
+    return jsonify(
+        [log.json() for log in _es_client.get_logs_by_test_item(get_request_data(request))])
+
+
 def start_http_server():
     application.logger.setLevel(logging.INFO)
     logger.info("Started http server")

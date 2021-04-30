@@ -2,6 +2,7 @@ import logging
 import elasticsearch
 import elasticsearch.helpers
 from utils import utils
+from commons.launch_objects import Log
 
 logger = logging.getLogger("esLogsService.esClient")
 
@@ -50,3 +51,36 @@ class EsClient:
                 logger.error(err)
                 return 0
         return 0
+
+    def get_logs_by_query(self, project, query):
+        es_index_name = self.format_index_name(project)
+        logs = []
+        for res in elasticsearch.helpers.scan(self.es_client,
+                                              query=query,
+                                              index=es_index_name):
+            log = Log(**res["_source"])
+            log.id = res["_id"]
+            logs.append(log)
+        return logs
+
+    def get_logs_by_ids(self, logs_request):
+        return self.get_logs_by_query(logs_request["project"], {
+            "size": 1000,
+            "query": {
+                "ids": {
+                    "values": logs_request["ids"]
+                }
+            }
+        })
+
+    def get_logs_by_test_item(self, logs_request):
+        return self.get_logs_by_query(logs_request["project"], {
+            "size": 1000,
+            "query": {
+                "bool": {
+                    "filter": [
+                        {"term": {"item_id": logs_request["test_item"]}}
+                    ]
+                }
+            }
+        })
