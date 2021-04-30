@@ -144,3 +144,13 @@ class EsClient:
                 "_index": res["_index"],
             })
         return self._bulk_index(bodies)
+
+    def search_logs(self, search_query):
+        return self.get_logs_by_query(search_query["project"], {
+            "size": 1000,
+            "query": {
+                "match": {
+                    "log_message": search_query["query"]
+                }
+            }
+        })
