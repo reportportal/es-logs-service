@@ -55,6 +55,7 @@ else:
     logging.disable(logging.INFO)
 logger = logging.getLogger("esLogsService")
 APP_CONFIG["appVersion"] = read_version()
+es_client_obj = es_client.EsClient(APP_CONFIG)
 
 application = create_application()
 CORS(application)
@@ -73,35 +74,30 @@ def test():
 
 @application.route('/delete_project', methods=['POST'])
 def delete_project():
-    _es_client = es_client.EsClient(APP_CONFIG)
-    return jsonify(_es_client.delete_index(get_request_data(request)))
+    return jsonify(es_client_obj.delete_index(get_request_data(request)))
 
 
 @application.route('/get_logs_by_ids', methods=['POST'])
 def get_logs_by_ids():
-    _es_client = es_client.EsClient(APP_CONFIG)
     return jsonify(
-        [log.json() for log in _es_client.get_logs_by_ids(get_request_data(request))])
+        [log.json() for log in es_client_obj.get_logs_by_ids(get_request_data(request))])
 
 
 @application.route('/get_logs_by_test_item', methods=['POST'])
 def get_logs_by_test_item():
-    _es_client = es_client.EsClient(APP_CONFIG)
     return jsonify(
-        [log.json() for log in _es_client.get_logs_by_test_item(get_request_data(request))])
+        [log.json() for log in es_client_obj.get_logs_by_test_item(get_request_data(request))])
 
 
 @application.route('/delete_logs', methods=['POST'])
 def delete_logs():
-    _es_client = es_client.EsClient(APP_CONFIG)
-    return jsonify(_es_client.delete_logs(get_request_data(request)))
+    return jsonify(es_client_obj.delete_logs(get_request_data(request)))
 
 
 @application.route('/search_logs', methods=['POST'])
 def search_logs():
-    _es_client = es_client.EsClient(APP_CONFIG)
     return jsonify(
-        [log.json() for log in _es_client.search_logs(get_request_data(request))])
+        [log.json() for log in es_client_obj.search_logs(get_request_data(request))])
 
 
 def start_http_server():
