@@ -25,9 +25,11 @@ services:
     restart: always
 
   es-logs-service:
-    image: es-logs-service
     ports:
       - "5010:5010"
+    build:
+      context: ./
+      dockerfile: Dockerfile
     environment:
       ES_HOSTS: http://elastic:elastic1q2w3e@elasticsearch:9200
     restart: always
