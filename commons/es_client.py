@@ -17,6 +17,8 @@
 import logging
 import elasticsearch
 import elasticsearch.helpers
+import requests
+
 from utils import utils
 from time import time
 from commons.launch_objects import Log
@@ -30,14 +32,16 @@ class EsClient:
         self.app_config = app_config
         self.host = app_config["esHost"]
         self.es_client = self.create_es_client(app_config)
+        self.get_template_name = lambda index_name: f"{index_name}_template"
+        self.get_policy_name = lambda index_name: f"{index_name}_policy"
 
     def create_es_client(self, app_config):
         return elasticsearch.Elasticsearch(
             [self.host], timeout=30,
             max_retries=5, retry_on_timeout=True)
 
-    def format_index_name(self, index_name):
-        return self.app_config["esIndexPrefix"] + str(index_name) + "_logs"
+    def format_index_name(self, project_id):
+        return self.app_config["esIndexPrefix"] + str(project_id) + "_logs"
 
     def index_exists(self, es_index_name, print_error=True):
         """Checks whether index exists"""
@@ -51,15 +55,41 @@ class EsClient:
                 logger.error(err)
             return False
 
-    def delete_index(self, index_name):
+    def log_response(self, response, success_message, error_message):
+        if response["status_code"] == 200:
+            logger.debug(success_message)
+        else:
+            logger.error(
+                "%s: %s",
+                error_message,
+                response["_content"]["error"]["root_cause"][0]["reason"]
+            )
+
+    def delete_index(self, project_id):
         """Delete the whole index"""
-        es_index_name = self.format_index_name(index_name)
+        es_index_name = self.format_index_name(project_id)
         if self.index_exists(es_index_name):
             try:
                 self.es_client.indices.delete(index=es_index_name + "*")
-                # TO DO delete template
-                # TO DO delete policy
+                delete_template_response = requests.delete(
+                    f"{self.host}/_index_template/{self.get_template_name(es_index_name)}",
+                    headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
+                ).__dict__
+                delete_policy_response = requests.delete(
+                    f"{self.host}/_ilm/policy/{self.get_policy_name(es_index_name)}",
+                    headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
+                ).__dict__
                 logger.info("ES Url %s", utils.remove_credentials_from_url(self.host))
+                self.log_response(
+                    response=delete_template_response,
+                    success_message=f"Deleted template for index {es_index_name}",
+                    error_message=f"Error while deleting template for index {es_index_name}"
+                )
+                self.log_response(
+                    response=delete_policy_response,
+                    success_message=f"Deleted policy for index {es_index_name}",
+                    error_message=f"Error while deleting policy for index {es_index_name}"
+                )
                 logger.debug("Deleted index %s", es_index_name)
                 return 1
             except Exception as err:
