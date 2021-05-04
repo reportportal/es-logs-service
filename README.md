@@ -22,4 +22,6 @@ curl -XPOST localhost:5010/delete_logs -H "Content-Type: application/json" -d "{
 
 curl -XPOST localhost:5010/search_logs -H "Content-Type: application/json" -d "{\"query\": \"test\", \"project\":10}"
 
+curl -XPOST localhost:5010/search_logs_by_pattern -H "Content-Type: application/json" -d "{\"query\": \"t.*t\", \"project\":10}"
+
 ```

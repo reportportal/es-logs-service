@@ -188,3 +188,15 @@ class EsClient:
                 }
             }
         })
+
+    def search_logs_by_pattern(self, search_query):
+        return self.get_logs_by_query(search_query["project"], {
+            "size": 1000,
+            "query": {
+                "regexp": {
+                    "log_message": {
+                        "value": search_query["query"],
+                    }
+                }
+            }
+        })
