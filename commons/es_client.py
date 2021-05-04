@@ -55,6 +55,16 @@ class EsClient:
                 logger.error(err)
             return False
 
+    def log_response(self, response, success_message, error_message):
+        if response["status_code"] == 200:
+            logger.debug(success_message)
+        else:
+            logger.error(
+                "%s: %s",
+                error_message,
+                response["_content"]["error"]["root_cause"][0]["reason"]
+            )
+
     def delete_index(self, project_id):
         """Delete the whole index"""
         es_index_name = self.format_index_name(project_id)
@@ -70,22 +80,16 @@ class EsClient:
                     headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
                 ).__dict__
                 logger.info("ES Url %s", utils.remove_credentials_from_url(self.host))
-                if delete_template_response["status_code"] == 200:
-                    logger.debug("Deleted template for index %s", es_index_name)
-                else:
-                    logger.error(
-                        "Error while deleting template for index %s: %s",
-                        es_index_name,
-                        delete_template_response["_content"]["error"]["root_cause"][0]["reason"]
-                    )
-                if delete_policy_response["status_code"] == 200:
-                    logger.debug("Deleted policy for index %s", es_index_name)
-                else:
-                    logger.error(
-                        "Error while deleting policy for index %s: %s",
-                        es_index_name,
-                        delete_policy_response["_content"]["error"]["root_cause"][0]["reason"]
-                    )
+                self.log_response(
+                    response=delete_template_response,
+                    success_message=f"Deleted template for index {es_index_name}",
+                    error_message=f"Error while deleting template for index {es_index_name}"
+                )
+                self.log_response(
+                    response=delete_policy_response,
+                    success_message=f"Deleted policy for index {es_index_name}",
+                    error_message=f"Error while deleting policy for index {es_index_name}"
+                )
                 logger.debug("Deleted index %s", es_index_name)
                 return 1
             except Exception as err:
