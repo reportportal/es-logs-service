@@ -84,7 +84,7 @@ class EsClient:
                     logger.error(
                         "Error while deleting policy for index %s: %s",
                         es_index_name,
-                        delete_template_response["_content"]["error"]["root_cause"][0]["reason"]
+                        delete_policy_response["_content"]["error"]["root_cause"][0]["reason"]
                     )
                 logger.debug("Deleted index %s", es_index_name)
                 return 1
