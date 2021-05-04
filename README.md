@@ -1,15 +1,11 @@
 # es-logs-service
 
 ### Installation and running
-To run locally, install a virtual environment from requirements.txt or requirements_windows.txt and [run Flask app](https://flask.palletsprojects.com/en/1.1.x/quickstart/).  
+To run locally, install a virtual environment from requirements.txt or requirements_windows.txt and execute via command ```python app.py```.  
 To run from docker, build an image and run a container:
 ```
 docker build -t es-logs-service .
-docker run -dp 5010:5010 --name es-logs-service es-logs-service
-```
-To interact with the container shell run:
-```
-docker exec -it es-logs-service /bin/sh
+docker-compose -p es-logs -f docker-compose.yml up
 ```
 
 ### Functionality check
