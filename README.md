@@ -2,10 +2,9 @@
 
 ### Installation and running
 To run locally, install a virtual environment from requirements.txt or requirements_windows.txt and execute via command ```python app.py```.  
-To run from docker, build an image and run a container:
+To run from docker, use docker-compose setup:
 ```
-docker build -t es-logs-service .
-docker-compose -p es-logs -f docker-compose.yml up
+docker-compose -p es-logs -f docker-compose.yml up --build
 ```
 
 ### Functionality check
