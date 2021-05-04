@@ -1,0 +1,35 @@
+version: '2.4'
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
+    volumes:
+      - ./data/elasticsearch_1:/usr/share/elasticsearch/data
+    environment:
+      - "bootstrap.memory_lock=true"
+      - "discovery.type=single-node"
+      - "logger.level=INFO"
+      - "xpack.security.enabled=true"
+      - "ELASTIC_PASSWORD=elastic1q2w3e"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD", "curl","-s" ,"-f", "http://elastic:elastic1q2w3e@localhost:9200/_cat/health"]
+    restart: always
+
+  es-logs-service:
+    image: es-logs-service
+    ports:
+      - "5010:5010"
+    environment:
+      ES_HOSTS: http://elastic:elastic1q2w3e@elasticsearch:9200
+    restart: always
+    depends_on:
+      - elasticsearch

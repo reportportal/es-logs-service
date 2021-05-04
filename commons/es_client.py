@@ -71,6 +71,8 @@ class EsClient:
 
     def get_logs_by_query(self, project, query):
         es_index_name = self.format_index_name(project)
+        if not self.index_exists(es_index_name):
+            return []
         logs = []
         for res in elasticsearch.helpers.scan(self.es_client,
                                               query=query,
@@ -134,6 +136,8 @@ class EsClient:
 
     def delete_logs(self, logs_request):
         es_index_name = self.format_index_name(logs_request["project"])
+        if not self.index_exists(es_index_name):
+            return 0
         bodies = []
         for res in elasticsearch.helpers.scan(self.es_client,
                                               query=self.get_ids_query(logs_request["ids"]),
