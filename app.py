@@ -111,6 +111,11 @@ def index_logs():
     return jsonify(es_client_obj.index_logs(get_request_data(request)))
 
 
+@application.route('/update_policy', methods=['POST'])
+def update_policy():
+    return jsonify(es_client_obj.update_policy_keep_logs_days(get_request_data(request)))
+
+
 def start_http_server():
     application.logger.setLevel(logging.INFO)
     logger.info("Started http server")

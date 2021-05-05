@@ -18,6 +18,7 @@ import logging
 import elasticsearch
 import elasticsearch.helpers
 import requests
+import json
 
 from utils import utils
 from time import time
@@ -73,11 +74,11 @@ class EsClient:
                 self.es_client.indices.delete(index=es_index_name + "*")
                 delete_template_response = requests.delete(
                     f"{self.host}/_index_template/{self.get_template_name(es_index_name)}",
-                    headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
+                    headers={"Content-type": "application/json", "Accept": "text/plain"}
                 ).__dict__
                 delete_policy_response = requests.delete(
                     f"{self.host}/_ilm/policy/{self.get_policy_name(es_index_name)}",
-                    headers={'Content-type': 'application/json', 'Accept': 'text/plain'}
+                    headers={"Content-type": "application/json", "Accept": "text/plain"}
                 ).__dict__
                 logger.info("ES Url %s", utils.remove_credentials_from_url(self.host))
                 self.log_response(
@@ -142,7 +143,6 @@ class EsClient:
         if not bodies:
             return 0
         start_time = time()
-        success_count = 0
         logger.debug("Indexing %d logs...", len(bodies))
         try:
             success_count, errors = elasticsearch.helpers.bulk(self.es_client,
@@ -204,3 +204,35 @@ class EsClient:
         index_name = self.format_index_name(project_id)
         prepared_logs = [{"_index": index_name, "_source": log} for log in logs]
         return self._bulk_index(prepared_logs)
+
+    def get_policy(self, policy_name):
+        get_policy_response = requests.get(
+            "%s/_ilm/policy/%s" % (self.host, policy_name),
+            headers={"Content-type": "application/json", "Accept": "text/plain"}
+        ).__dict__
+        if get_policy_response["status_code"] == 404:
+            raise elasticsearch.NotFoundError
+        return list(json.loads(get_policy_response["_content"]).values())[0]["policy"]
+
+    def put_policy(self, policy_name, policy_dict):
+        return requests.put(
+            "%s/_ilm/policy/%s" % (self.host, policy_name),
+            data=json.dumps({"policy": policy_dict}),
+            headers={"Content-type": "application/json", "Accept": "text/plain"}
+        ).__dict__
+
+    def update_policy_keep_logs_days(self, update_query):
+        project_id = update_query["project"]
+        new_keep_logs_days_value = update_query["keep_logs_days"]
+        policy_name = self.get_policy_name(self.format_index_name(project_id))
+        try:
+            policy = self.get_policy(policy_name)
+        except elasticsearch.NotFoundError:
+            logger.error("The policy %s not found" % policy_name)
+            return 0
+        policy["phases"]["delete"]["min_age"] = f"{new_keep_logs_days_value}d"
+        put_policy_response = self.put_policy(policy_name, policy)
+        self.log_response(put_policy_response,
+                          success_message=f"The policy {policy_name} was updated.",
+                          error_message=f"Error while updating the policy {policy_name}")
+        return int(put_policy_response["status_code"] == 200)
