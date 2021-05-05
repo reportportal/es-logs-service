@@ -106,6 +106,11 @@ def search_logs_by_pattern():
         [log.json() for log in es_client_obj.search_logs_by_pattern(get_request_data(request))])
 
 
+@application.route('/index_logs', methods=['POST'])
+def index_logs():
+    return jsonify(es_client_obj.index_logs(get_request_data(request)))
+
+
 def start_http_server():
     application.logger.setLevel(logging.INFO)
     logger.info("Started http server")

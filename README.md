@@ -24,4 +24,6 @@ curl -XPOST localhost:5010/search_logs -H "Content-Type: application/json" -d "{
 
 curl -XPOST localhost:5010/search_logs_by_pattern -H "Content-Type: application/json" -d "{\"query\": \"t.*t\", \"project\":10}"
 
+curl -XPOST localhost:5010/index_logs -H "Content-Type: application/json" -d "{\"logs\": [{\"uuid\": \"2dec50f6-3a44-4756-8dcc-b1d22ad70bdb\", \"log_time\": \"2021-05-04 15:20:44\", \"log_message\": \"this is a test indexed log\", \"item_id\": 5000, \"launch_id\": 500, \"last_modified\": \"2021-05-04 15:20:44\", \"log_level\": 40000, \"attachment_id\": 5000}], \"project\": 10}"
+
 ```

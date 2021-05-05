@@ -145,14 +145,11 @@ class EsClient:
         success_count = 0
         logger.debug("Indexing %d logs...", len(bodies))
         try:
-            try:
-                success_count, errors = elasticsearch.helpers.bulk(self.es_client,
-                                                                   bodies,
-                                                                   chunk_size=es_chunk_number,
-                                                                   request_timeout=30,
-                                                                   refresh=refresh)
-            except Exception as err:
-                logger.error(err)
+            success_count, errors = elasticsearch.helpers.bulk(self.es_client,
+                                                               bodies,
+                                                               chunk_size=es_chunk_number,
+                                                               request_timeout=30,
+                                                               refresh=refresh)
             logger.debug("Processed %d logs", success_count)
             if errors:
                 logger.debug("Occurred errors %s", errors)
@@ -200,3 +197,10 @@ class EsClient:
                 }
             }
         })
+
+    def index_logs(self, index_query):
+        logs = index_query["logs"]
+        project_id = index_query["project"]
+        index_name = self.format_index_name(project_id)
+        prepared_logs = [{"_index": index_name, "_source": log} for log in logs]
+        return self._bulk_index(prepared_logs)
