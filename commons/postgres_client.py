@@ -27,7 +27,8 @@ class PostgresClient:
         self.app_config = app_config
         self.rp_logs_name = "rp_logs"
         self.rp_logs_columns = ["uuid", "log_time", "log_message", "item_id",
-            "launch_id", "project", "last_modified", "log_level", "attachment_id"]
+                                "launch_id", "project", "last_modified",
+                                "log_level", "attachment_id"]
 
     def connect_to_db(self):
         return psycopg2.connect(user=self.app_config["postgresUser"],
@@ -123,6 +124,7 @@ class PostgresClient:
         return count
 
     def delete_index(self, project_id):
+        # TO DO delete only rows where project id equals to the requested project id
         pass
 
     def transform_result_to_logs(self, db_results):
@@ -136,20 +138,24 @@ class PostgresClient:
     def get_logs_by_ids(self, logs_request):
         return self.transform_result_to_logs(
             self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
-                where id in ({",".join([str(_id) for _id in logs_request["ids"]])}) 
+                where id in ({",".join([str(_id) for _id in logs_request["ids"]])})
                     and project={logs_request["project"]}"""))
 
     def get_logs_by_test_item(self, logs_request):
         return self.transform_result_to_logs(
             self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
-                where item_id={logs_request["test_item"]} 
+                where item_id={logs_request["test_item"]}
                     and project={logs_request["project"]}"""))
 
     def delete_logs(self, logs_request):
         pass
 
     def search_logs(self, search_query):
-        pass
+        query = " | ".join(search_query["query"].split())
+        return self.transform_result_to_logs(
+            self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
+                where to_tsvector(log_message) @@ to_tsquery('{query}') and
+                project={search_query["project"]}"""))
 
     def search_logs_by_pattern(self, search_query):
         pass
