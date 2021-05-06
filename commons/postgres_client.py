@@ -122,7 +122,7 @@ class PostgresClient:
                 connection.close()
         return count
 
-    def delete_index(self, project_id):
+    def delete_project(self, project_id):
         query = f"""
                     DELETE FROM {self.rp_logs_name}
                      WHERE project = {project_id}

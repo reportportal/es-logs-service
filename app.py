@@ -91,7 +91,7 @@ def test():
 
 @application.route('/delete_project', methods=['POST'])
 def delete_project():
-    return jsonify(database_client.delete_index(get_request_data(request)))
+    return jsonify(database_client.delete_project(get_request_data(request)))
 
 
 @application.route('/get_logs_by_ids', methods=['POST'])

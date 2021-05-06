@@ -96,7 +96,7 @@ class EsClient:
                 response_content["error"]["root_cause"][0]["reason"]
             )
 
-    def delete_index(self, project_id):
+    def delete_project(self, project_id):
         """Delete the whole index"""
         es_index_name = self.get_index_name(project_id)
         if self.index_exists(es_index_name):
