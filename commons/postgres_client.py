@@ -123,8 +123,16 @@ class PostgresClient:
         return count
 
     def delete_index(self, project_id):
-        # TO DO delete only rows where project id equals to the requested project id
-        pass
+        query = f"""
+                    DELETE FROM {self.rp_logs_name}
+                     WHERE project = {project_id}
+                """
+        delete_res = int(self.commit_to_db(query))
+        if delete_res != 0:
+            logger.info("Deleted project %s", project_id)
+        else:
+            logger.info("Failed to delete project %s", project_id)
+        return delete_res
 
     def transform_result_to_logs(self, db_results):
         objects = []
