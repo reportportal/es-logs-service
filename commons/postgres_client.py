@@ -22,7 +22,6 @@ logger = logging.getLogger("esLogsService.postgresClient")
 
 
 class PostgresClient:
-
     def __init__(self, app_config={}):
         self.app_config = app_config
         self.rp_logs_name = "rp_logs"
@@ -113,7 +112,7 @@ class PostgresClient:
 
             # Get a total of the inserted records
             count = cursor.rowcount
-            logger.debug("Successfully inserted ", count, " records.")
+            logger.debug("Successfully inserted %s records.", count)
         except (Exception, psycopg2.Error) as error:
             logger.error("Error while committing to PostgreSQL %s", error)
             return 0
@@ -200,4 +199,5 @@ class PostgresClient:
         return 0
 
     def update_policy_keep_logs_days(self, update_query):
+        logger.warning("Trying to update policy for postgres client that doesn't implement ILM logic.")
         return 0
