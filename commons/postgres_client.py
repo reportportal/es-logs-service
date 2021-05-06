@@ -40,7 +40,7 @@ class PostgresClient:
         try:
             transformed_results = []
             columns = [col.strip() for col in re.search(
-                "select (.*) from", query, flags=re.IGNORECASE).group(1).split(",")]
+                "select (.*)[\r\n ]+from", query, flags=re.IGNORECASE).group(1).split(",")]
             for r in results:
                 obj = {}
                 for idx, column in enumerate(columns):
@@ -155,12 +155,12 @@ class PostgresClient:
                     and project={logs_request["project"]}"""))
 
     def delete_logs(self, logs_request):
-        project = logs_request["project"]
+        project_id = logs_request["project"]
         id_list = logs_request["ids"]
         query = f"""
             DELETE FROM {self.rp_logs_name}
              WHERE id IN ({",".join(id_list)})
-                   AND project = {project}
+                   AND project = {project_id}
         """
         delete_res = int(self.commit_to_db(query))
         if delete_res != 0:
@@ -177,7 +177,15 @@ class PostgresClient:
                 project={search_query["project"]}"""))
 
     def search_logs_by_pattern(self, search_query):
-        pass
+        regexp_pattern = search_query["query"]
+        project_id = search_query["project"]
+        query = f"""
+            SELECT id,{",".join(self.rp_logs_columns)}
+              FROM {self.rp_logs_name}
+             WHERE log_message ~ '{regexp_pattern}'
+                   AND project = {project_id}
+        """
+        return self.transform_result_to_logs(self.query_db(query))
 
     def create_log_table(self):
         res = self.commit_to_db("""
