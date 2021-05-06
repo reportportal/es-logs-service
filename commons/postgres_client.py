@@ -16,6 +16,7 @@
 import logging
 import psycopg2
 import re
+from commons import launch_objects
 
 logger = logging.getLogger("esLogsService.postgresClient")
 
@@ -24,6 +25,9 @@ class PostgresClient:
 
     def __init__(self, app_config={}):
         self.app_config = app_config
+        self.rp_logs_name = "rp_logs"
+        self.rp_logs_columns = ["uuid", "log_time", "log_message", "item_id",
+            "launch_id", "project", "last_modified", "log_level", "attachment_id"]
 
     def connect_to_db(self):
         return psycopg2.connect(user=self.app_config["postgresUser"],
@@ -121,11 +125,25 @@ class PostgresClient:
     def delete_index(self, project_id):
         pass
 
+    def transform_result_to_logs(self, db_results):
+        objects = []
+        for obj in db_results:
+            for column in ["log_time", "last_modified"]:
+                obj[column] = obj[column].strftime("%Y-%m-%d %H:%M:%S")
+            objects.append(launch_objects.Log(**obj))
+        return objects
+
     def get_logs_by_ids(self, logs_request):
-        pass
+        return self.transform_result_to_logs(
+            self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
+                where id in ({",".join([str(_id) for _id in logs_request["ids"]])}) 
+                    and project={logs_request["project"]}"""))
 
     def get_logs_by_test_item(self, logs_request):
-        pass
+        return self.transform_result_to_logs(
+            self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
+                where item_id={logs_request["test_item"]} 
+                    and project={logs_request["project"]}"""))
 
     def delete_logs(self, logs_request):
         pass
@@ -138,7 +156,7 @@ class PostgresClient:
 
     def create_log_table(self):
         res = self.commit_to_db("""
-            CREATE TABLE IF NOT EXISTS rp_logs (
+            CREATE TABLE IF NOT EXISTS %s (
                 id SERIAL PRIMARY KEY,
                 uuid VARCHAR(144) NOT NULL,
                 log_time TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -150,7 +168,7 @@ class PostgresClient:
                 log_level INTEGER,
                 attachment_id BIGINT
             )
-            """)
+            """ % self.rp_logs_name)
         return int(res)
 
     def index_logs(self, index_query):
@@ -169,7 +187,7 @@ class PostgresClient:
                         obj_row.append(obj[column])
                 objects.append(obj_row)
             insert_query = f"""
-                INSERT INTO rp_logs ({",".join(columns)})
+                INSERT INTO {self.rp_logs_name} ({",".join(columns)})
                 VALUES """
             values_pattern = f"""({",".join(["%s"] * len(columns))})"""
             return self.insert_to_db(insert_query, values_pattern, objects)
