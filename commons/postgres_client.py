@@ -147,7 +147,19 @@ class PostgresClient:
                     and project={logs_request["project"]}"""))
 
     def delete_logs(self, logs_request):
-        pass
+        project = logs_request["project"]
+        id_list = logs_request["ids"]
+        query = f"""
+            DELETE FROM {self.rp_logs_name}
+             WHERE id IN ({",".join(id_list)})
+                   AND project = {project}
+        """
+        delete_res = int(self.commit_to_db(query))
+        if delete_res != 0:
+            logger.info("Deleted logs %s from project %s", id_list, project)
+        else:
+            logger.info("Failed to delete logs %s from project %s", id_list, project)
+        return delete_res
 
     def search_logs(self, search_query):
         query = " | ".join(search_query["query"].split())
