@@ -44,8 +44,8 @@ class PostgresClient:
                 transformed_results.append(obj)
             return transformed_results
         except Exception as e:
-            print("Didn't derive columns from query")
-            print(e)
+            logger.error("Didn't derive columns from query")
+            logger.error(e)
             return results
 
     def query_db(self, query, query_all=True, derive_scheme=True, to_commit=False):
@@ -66,7 +66,7 @@ class PostgresClient:
                 if not query_all and len(results) > 0:
                     final_results = results[0]
         except (Exception, psycopg2.Error) as error:
-            print("Error while connecting to PostgreSQL %s", error)
+            logger.error("Error while connecting to PostgreSQL %s", error)
         finally:
             if(connection):
                 cursor.close()
@@ -82,7 +82,7 @@ class PostgresClient:
             cursor.execute(query)
             connection.commit()
         except (Exception, psycopg2.Error) as error:
-            print("Error while connecting to PostgreSQL %s", error)
+            logger.error("Error while connecting to PostgreSQL %s", error)
             return False
         finally:
             if(connection):
@@ -108,9 +108,9 @@ class PostgresClient:
 
             # Get a total of the inserted records
             count = cursor.rowcount
-            print("Successfully inserted ", count, " records.")
+            logger.debug("Successfully inserted ", count, " records.")
         except (Exception, psycopg2.Error) as error:
-            print("Error while committing to PostgreSQL %s", error)
+            logger.error("Error while committing to PostgreSQL %s", error)
             return 0
         finally:
             if(connection):
