@@ -100,6 +100,22 @@ def search_logs():
         [log.json() for log in es_client_obj.search_logs(get_request_data(request))])
 
 
+@application.route('/search_logs_by_pattern', methods=['POST'])
+def search_logs_by_pattern():
+    return jsonify(
+        [log.json() for log in es_client_obj.search_logs_by_pattern(get_request_data(request))])
+
+
+@application.route('/index_logs', methods=['POST'])
+def index_logs():
+    return jsonify(es_client_obj.index_logs(get_request_data(request)))
+
+
+@application.route('/update_policy', methods=['POST'])
+def update_policy():
+    return jsonify(es_client_obj.update_policy_keep_logs_days(get_request_data(request)))
+
+
 def start_http_server():
     application.logger.setLevel(logging.INFO)
     logger.info("Started http server")
