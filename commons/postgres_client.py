@@ -22,7 +22,6 @@ logger = logging.getLogger("esLogsService.postgresClient")
 
 
 class PostgresClient:
-
     def __init__(self, app_config={}):
         self.app_config = app_config
         self.rp_logs_name = "rp_logs"
@@ -41,7 +40,7 @@ class PostgresClient:
         try:
             transformed_results = []
             columns = [col.strip() for col in re.search(
-                "select (.*) from", query, flags=re.IGNORECASE).group(1).split(",")]
+                "select (.*)[\r\n ]+from", query, flags=re.IGNORECASE).group(1).split(",")]
             for r in results:
                 obj = {}
                 for idx, column in enumerate(columns):
@@ -113,7 +112,7 @@ class PostgresClient:
 
             # Get a total of the inserted records
             count = cursor.rowcount
-            logger.debug("Successfully inserted ", count, " records.")
+            logger.debug("Successfully inserted %s records.", count)
         except (Exception, psycopg2.Error) as error:
             logger.error("Error while committing to PostgreSQL %s", error)
             return 0
@@ -123,9 +122,17 @@ class PostgresClient:
                 connection.close()
         return count
 
-    def delete_index(self, project_id):
-        # TO DO delete only rows where project id equals to the requested project id
-        pass
+    def delete_project(self, project_id):
+        query = f"""
+                    DELETE FROM {self.rp_logs_name}
+                     WHERE project = {project_id}
+                """
+        delete_res = int(self.commit_to_db(query))
+        if delete_res != 0:
+            logger.info("Deleted project %s", project_id)
+        else:
+            logger.info("Failed to delete project %s", project_id)
+        return delete_res
 
     def transform_result_to_logs(self, db_results):
         objects = []
@@ -148,7 +155,19 @@ class PostgresClient:
                     and project={logs_request["project"]}"""))
 
     def delete_logs(self, logs_request):
-        pass
+        project_id = logs_request["project"]
+        id_list = logs_request["ids"]
+        query = f"""
+            DELETE FROM {self.rp_logs_name}
+             WHERE id IN ({",".join(id_list)})
+                   AND project = {project_id}
+        """
+        delete_res = int(self.commit_to_db(query))
+        if delete_res != 0:
+            logger.info("Deleted logs %s from project %s", id_list, project)
+        else:
+            logger.info("Failed to delete logs %s from project %s", id_list, project)
+        return delete_res
 
     def search_logs(self, search_query):
         query = " | ".join(search_query["query"].split())
@@ -158,7 +177,15 @@ class PostgresClient:
                 project={search_query["project"]}"""))
 
     def search_logs_by_pattern(self, search_query):
-        pass
+        regexp_pattern = search_query["query"]
+        project_id = search_query["project"]
+        query = f"""
+            SELECT id,{",".join(self.rp_logs_columns)}
+              FROM {self.rp_logs_name}
+             WHERE log_message ~ '{regexp_pattern}'
+                   AND project = {project_id}
+        """
+        return self.transform_result_to_logs(self.query_db(query))
 
     def create_log_table(self):
         res = self.commit_to_db("""
@@ -200,4 +227,5 @@ class PostgresClient:
         return 0
 
     def update_policy_keep_logs_days(self, update_query):
+        logger.warning("Trying to update policy for postgres client that doesn't implement ILM logic.")
         return 0
