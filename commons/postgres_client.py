@@ -144,36 +144,36 @@ class PostgresClient:
 
     def get_logs_by_ids(self, logs_request):
         return self.transform_result_to_logs(
-            self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
-                where id in ({",".join([str(_id) for _id in logs_request["ids"]])})
-                    and project={logs_request["project"]}"""))
+            self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
+                WHERE id IN ({",".join([str(_id) for _id in logs_request["ids"]])})
+                    AND project={logs_request["project"]}"""))
 
     def get_logs_by_test_item(self, logs_request):
         return self.transform_result_to_logs(
-            self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
-                where item_id={logs_request["test_item"]}
-                    and project={logs_request["project"]}"""))
+            self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
+                WHERE item_id={logs_request["test_item"]}
+                    AND project={logs_request["project"]}"""))
 
     def delete_logs(self, logs_request):
         project_id = logs_request["project"]
         id_list = logs_request["ids"]
         query = f"""
             DELETE FROM {self.rp_logs_name}
-             WHERE id IN ({",".join(id_list)})
+             WHERE id IN ({",".join([str(_id) for _id in id_list])})
                    AND project = {project_id}
         """
         delete_res = int(self.commit_to_db(query))
         if delete_res != 0:
-            logger.info("Deleted logs %s from project %s", id_list, project)
+            logger.info("Deleted logs %s from project %s", id_list, project_id)
         else:
-            logger.info("Failed to delete logs %s from project %s", id_list, project)
+            logger.info("Failed to delete logs %s from project %s", id_list, project_id)
         return delete_res
 
     def search_logs(self, search_query):
         query = " | ".join(search_query["query"].split())
         return self.transform_result_to_logs(
-            self.query_db(f"""select id,{",".join(self.rp_logs_columns)} from {self.rp_logs_name}
-                where to_tsvector(log_message) @@ to_tsquery('{query}') and
+            self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
+                WHERE to_tsvector(log_message) @@ to_tsquery('{query}') AND
                 project={search_query["project"]}"""))
 
     def search_logs_by_pattern(self, search_query):
@@ -188,10 +188,10 @@ class PostgresClient:
         return self.transform_result_to_logs(self.query_db(query))
 
     def create_log_table(self):
-        res = self.commit_to_db("""
-            CREATE TABLE IF NOT EXISTS %s (
-                id SERIAL PRIMARY KEY,
-                uuid VARCHAR(144) NOT NULL,
+        res = self.commit_to_db(f"""
+            CREATE TABLE IF NOT EXISTS {self.rp_logs_name} (
+                id BIGSERIAL PRIMARY KEY,
+                uuid VARCHAR(36) NOT NULL,
                 log_time TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 log_message text,
                 item_id BIGINT,
@@ -200,8 +200,10 @@ class PostgresClient:
                 last_modified TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
                 log_level INTEGER,
                 attachment_id BIGINT
-            )
-            """ % self.rp_logs_name)
+            );
+            CREATE INDEX IF NOT EXISTS log_ti_idx ON log (item_id);
+            CREATE INDEX IF NOT EXISTS log_message_trgm_idx ON log USING gin (log_message gin_trgm_ops);
+            """)
         return int(res)
 
     def index_logs(self, index_query):
