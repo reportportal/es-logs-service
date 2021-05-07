@@ -24,6 +24,47 @@ services:
       test: ["CMD", "curl","-s" ,"-f", "http://elastic:elastic1q2w3e@localhost:9200/_cat/health"]
     restart: always
 
+  postgres:
+    image: postgres:12-alpine
+    shm_size: '512m'
+    environment:
+      POSTGRES_USER: rpuser
+      POSTGRES_PASSWORD: rppass
+      POSTGRES_DB: reportportal
+    volumes:
+      # For unix host
+      #- ./data/postgres:/var/lib/postgresql/data
+      # For windows host
+      - postgres:/var/lib/postgresql/data
+    # If you need to access the DB locally. Could be a security risk to expose DB.
+    ports:
+      - "5432:5432"
+    command:
+      -c checkpoint_completion_target=0.9
+      -c work_mem=96MB
+      -c wal_writer_delay=20ms
+      -c synchronous_commit=off
+      -c wal_buffers=32MB
+      -c min_wal_size=2GB
+      -c max_wal_size=4GB
+    # Optional, for SSD Data Storage. If you are using the HDD, set up this command to '2'
+    #  -c effective_io_concurrency=200
+    # Optional, for SSD Data Storage. If you are using the HDD, set up this command to '4'
+    #  -c random_page_cost=1.1
+    # Optional, can be scaled. Example for 4 CPU, 16GB RAM instance, where only the database is deployed
+    #  -c max_worker_processes=4
+    #  -c max_parallel_workers_per_gather=2
+    #  -c max_parallel_workers=4
+    #  -c shared_buffers=4GB
+    #  -c effective_cache_size=12GB
+    #  -c maintenance_work_mem=1GB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 120s
+      retries: 10
+    restart: always
+
   es-logs-service:
     ports:
       - "5010:5010"
@@ -32,6 +73,11 @@ services:
       dockerfile: Dockerfile
     environment:
       ES_HOSTS: http://elastic:elastic1q2w3e@elasticsearch:9200
+      DATABASE_TYPE: elasticsearch
+      POSTGRES_HOST: postgres
     restart: always
     depends_on:
       - elasticsearch
+
+volumes:
+  postgres:
