@@ -201,8 +201,9 @@ class PostgresClient:
                 log_level INTEGER,
                 attachment_id BIGINT
             );
-            CREATE INDEX IF NOT EXISTS log_ti_idx ON log (item_id);
-            CREATE INDEX IF NOT EXISTS log_message_trgm_idx ON log USING gin (log_message gin_trgm_ops);
+            CREATE INDEX IF NOT EXISTS log_ti_idx ON {self.rp_logs_name} (item_id);
+            CREATE INDEX IF NOT EXISTS log_message_trgm_idx
+                ON {self.rp_logs_name} USING gin (log_message gin_trgm_ops);
             """)
         return int(res)
 
