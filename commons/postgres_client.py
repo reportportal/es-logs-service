@@ -146,13 +146,13 @@ class PostgresClient:
         return self.transform_result_to_logs(
             self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
                 WHERE id IN ({",".join([str(_id) for _id in logs_request["ids"]])})
-                    AND project={logs_request["project"]}"""))
+                    AND project={logs_request["project"]} LIMIT 1000"""))
 
     def get_logs_by_test_item(self, logs_request):
         return self.transform_result_to_logs(
             self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
                 WHERE item_id={logs_request["test_item"]}
-                    AND project={logs_request["project"]}"""))
+                    AND project={logs_request["project"]} LIMIT 1000"""))
 
     def delete_logs(self, logs_request):
         project_id = logs_request["project"]
@@ -201,7 +201,7 @@ class PostgresClient:
         return self.transform_result_to_logs(
             self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
                 WHERE to_tsvector(log_message) @@ to_tsquery('{query}') AND
-                project={search_query["project"]}"""))
+                project={search_query["project"]} LIMIT 1000"""))
 
     def search_logs_by_pattern(self, search_query):
         regexp_pattern = search_query["query"]
@@ -211,6 +211,7 @@ class PostgresClient:
               FROM {self.rp_logs_name}
              WHERE log_message ~ '{regexp_pattern}'
                    AND project = {project_id}
+             LIMIT 1000
         """
         return self.transform_result_to_logs(self.query_db(query))
 

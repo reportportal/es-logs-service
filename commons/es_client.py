@@ -146,6 +146,8 @@ class EsClient:
             log = Log(**res["_source"])
             log.id = res["_id"]
             logs.append(log)
+            if len(logs) >= 1000:
+                break
         return logs
 
     def get_ids_query(self, ids):

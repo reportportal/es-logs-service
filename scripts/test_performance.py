@@ -22,6 +22,7 @@ parser.add_argument('--metrics_folder', default="../tmp/metrics")
 args = parser.parse_args()
 
 args.data_size = int(args.data_size)
+args.query_num = int(args.query_num)
 print("Data size: ", args.data_size)
 print("Query num: ", args.query_num)
 print("Method: ", args.method)
@@ -79,13 +80,19 @@ def index_logs(num_logs, project_id, drop_existing=True, batch_size=10000):
     return get_performance_result_template(performance_result)
 
 
+def choose_ids(existing_ids, num_ids):
+    log_ids = []
+    for x_ in np.random.choice(existing_ids, num_ids, replace=False):
+        log_ids.append(int(x_))
+    return log_ids
+
 def get_logs_by_ids(num_queries, project_id):
     performance_result = []
     existing_ids = list(range(args.data_size))
     for num_ids in [1, 10, 100, 500, 1000, 5000, 10000]:
         results = []
         for query in range(num_queries):
-            log_ids = np.random.choice(existing_ids, num_ids, replace=False)
+            log_ids = choose_ids(existing_ids, num_ids)
             start_time = time.time()
             make_logs_post_request("get_logs_by_ids", {"ids": log_ids, "project": project_id})
             time_spent = time.time() - start_time
@@ -101,7 +108,7 @@ def search_logs(num_queries, project_id):
     performance_result = []
     for query in range(num_queries):
         str_query = pool_log_messages[np.random.randint(0, len_pool_messages)]
-        str_query = " ".join(str_query.split()[:np.random.randint(5, 40)])
+        str_query = " ".join(str_query.split()[:np.random.randint(5, 20)])
         start_time = time.time()
         make_logs_post_request("search_logs", {"query": str_query, "project": project_id})
         time_spent = time.time() - start_time
@@ -133,7 +140,7 @@ def delete_logs(num_queries, project_id):
     for num_ids in [1, 10, 100, 500, 1000, 5000, 10000]:
         results = []
         for query in range(num_queries):
-            log_ids = np.random.choice(existing_ids, num_ids, replace=False)
+            log_ids = choose_ids(existing_ids, num_ids)
             start_time = time.time()
             make_logs_post_request("delete_logs", {"ids": log_ids, "project": project_id})
             time_spent = time.time() - start_time
@@ -162,12 +169,12 @@ def delete_logs_by_date(num_queries, project_id):
              "project": project_id})
         time_spent = time.time() - start_time
         make_logs_post_request(
-            "index_logs", {"logs": generate_logs(deleted_num), "project": project_id})
+            "index_logs", {"logs": generate_logs(deleted_num, add_id=False), "project": project_id})
         performance_result.append(time_spent)
     return get_performance_result_template(performance_result)
 
 
-def generate_logs(num, log_ids=None):
+def generate_logs(num, log_ids=None, add_id=True):
     all_logs = []
     if log_ids is None:
         log_ids = list(range(num))
@@ -177,9 +184,7 @@ def generate_logs(num, log_ids=None):
         if cur_generated % 100000 == 0:
             print("Gathered %d logs" % cur_generated)
         cur_date = datetime.datetime.now() - datetime.timedelta(days=np.random.randint(1, 200))
-        all_logs.append(
-            {
-                "id": _id,
+        obj = {
                 "uuid": str(uuid.uuid4()),
                 "log_time": cur_date.strftime("%Y-%m-%d %H:%M:%S"),
                 "log_message": pool_log_messages[np.random.randint(0, len_pool_messages)],
@@ -189,7 +194,9 @@ def generate_logs(num, log_ids=None):
                 "log_level": int(np.random.choice([20000, 30000, 40000, 50000])),
                 "attachment_id": int(np.random.randint(1000, 5001)),
             }
-        )
+        if add_id:
+            obj["id"] = _id
+        all_logs.append(obj)
     return all_logs
 
 
