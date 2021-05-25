@@ -202,6 +202,8 @@ def perform_testing(method):
         performance_result = get_logs_by_ids(args.query_num, 100)
     if method == "search_logs":
         performance_result = search_logs(args.query_num, 100)
+    if method == "search_logs_by_pattern":
+        performance_result = search_logs_by_pattern(args.query_num, 100)
     if method == "delete_logs":
         performance_result = delete_logs(args.query_num, 100)
     if method == "delete_logs_by_date":
