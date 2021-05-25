@@ -306,9 +306,9 @@ class EsClient:
                 return 0
         prepared_logs = []
         for log in logs:
-            if "_id" in log:
+            if "id" in log:
                 prepared_logs.append({
-                    "_id": log["_id"],
+                    "_id": log["id"],
                     "_index": index_name,
                     "_source": log
                 })

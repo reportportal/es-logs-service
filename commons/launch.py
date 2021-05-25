@@ -80,7 +80,8 @@ class TestItem:
         self.lastModified = lastModified
 
     def __str__(self):
-        return "Test item Id: {}; UniqueId: {}; Name: {}; Item Description {}; Auto analyzed: {}; IssueType: {} Issue Description: {} Links to BTS: {} Start time {}".format(
+        return """Test item Id: {}; UniqueId: {}; Name: {}; Item Description {}; Auto analyzed: {};" \
+                IssueType: {} Issue Description: {} Links to BTS: {} Start time {}""".format(
             self.testItemId, self.uniqueId, self.name,
             self.description, self.isAutoAnalyzed, self.issueType,
             self.issueDescription, self.links_to_bts, self.startTime
