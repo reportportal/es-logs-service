@@ -111,6 +111,11 @@ def delete_logs():
     return jsonify(database_client.delete_logs(get_request_data(request)))
 
 
+@application.route('/delete_logs_by_date', methods=['POST'])
+def delete_logs_by_date():
+    return jsonify(database_client.delete_logs_by_date(get_request_data(request)))
+
+
 @application.route('/search_logs', methods=['POST'])
 def search_logs():
     return jsonify(
