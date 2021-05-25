@@ -20,6 +20,8 @@ curl -XPOST localhost:5010/get_logs_by_test_item -H "Content-Type: application/j
 
 curl -XPOST localhost:5010/delete_logs -H "Content-Type: application/json" -d "{\"ids\": [\"IvmhInkB8sJvJpo4yJoS\"], \"project\":10}"
 
+curl -XPOST localhost:5010/delete_logs_by_date -H "Content-Type: application/json" -d "{\"start_date\": \"2021-05-04\", \"end_date\": \"2021-05-07\", \"project\":10}"
+
 curl -XPOST localhost:5010/search_logs -H "Content-Type: application/json" -d "{\"query\": \"test\", \"project\":10}"
 
 curl -XPOST localhost:5010/search_logs_by_pattern -H "Content-Type: application/json" -d "{\"query\": \"t.*t\", \"project\":10}"

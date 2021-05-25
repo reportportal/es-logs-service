@@ -169,6 +169,33 @@ class PostgresClient:
             logger.info("Failed to delete logs %s from project %s", id_list, project_id)
         return delete_res
 
+    def delete_logs_by_date(self, logs_request):
+        project_id = logs_request["project"]
+        start_date = logs_request["start_date"]
+        end_date = logs_request["end_date"]
+        query = f"""
+            DELETE FROM {self.rp_logs_name}
+             WHERE log_time >= '{start_date}'
+               AND log_time <= '{end_date}'
+               AND project = {project_id}
+        """
+        delete_res = int(self.commit_to_db(query))
+        if delete_res != 0:
+            logger.info(
+                "Deleted logs in range (%s, %s) from project %s",
+                start_date,
+                end_date,
+                project_id,
+            )
+        else:
+            logger.info(
+                "Unable to delete logs in range (%s, %s) from project %s",
+                start_date,
+                end_date,
+                project_id,
+            )
+        return delete_res
+
     def search_logs(self, search_query):
         query = " | ".join(search_query["query"].split())
         return self.transform_result_to_logs(

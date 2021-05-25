@@ -90,10 +90,15 @@ class EsClient:
             logger.debug(success_message)
         else:
             response_content = json.loads(response["_content"])
+            if isinstance(response_content["error"], dict)\
+                    and "root_cause" in response_content["error"]:
+                reason = response_content["error"]["root_cause"][0]["reason"]
+            else:
+                reason = response_content["error"]
             logger.error(
                 "%s: %s",
                 error_message,
-                response_content["error"]["root_cause"][0]["reason"]
+                reason
             )
 
     def delete_project(self, project_id):
@@ -206,6 +211,25 @@ class EsClient:
             })
         return self._bulk_index(bodies)
 
+    def delete_logs_by_date(self, logs_request):
+        es_index_name = self.get_index_name(logs_request["project"])
+        start_date = logs_request["start_date"]
+        end_date = logs_request["end_date"]
+        if not self.index_exists(es_index_name):
+            return 0
+        query = {
+            "range": {
+                "log_time": {"gte": start_date, "lte": end_date, "format": "yyyy-MM-dd"}
+            }
+        }
+        delete_response = self.delete_by_query(query, es_index_name)
+        self.log_response(
+            delete_response,
+            success_message=f"Deleted logs in range {start_date, end_date} from {es_index_name}",
+            error_message=f"Unable to delete logs in range {start_date, end_date} from {es_index_name}",
+        )
+        return int(delete_response["status_code"] == 200)
+
     def search_logs(self, search_query):
         return self.get_logs_by_query(search_query["project"], {
             "size": 1000,
@@ -303,6 +327,13 @@ class EsClient:
         if get_policy_response["status_code"] == 404:
             raise elasticsearch.NotFoundError
         return list(json.loads(get_policy_response["_content"]).values())[0]["policy"]
+
+    def delete_by_query(self, query, index_name):
+        return requests.post(
+            "%s/%s/_delete_by_query" % (self.host, index_name),
+            data=json.dumps({"query": query}),
+            headers={"Content-type": "application/json", "Accept": "text/plain"}
+        ).__dict__
 
     def put_policy(self, policy_name, policy_dict):
         return requests.put(
