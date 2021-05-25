@@ -280,7 +280,19 @@ class EsClient:
             except RuntimeError:
                 logger.error(f"Error while initializing the index {index_name} for project {project_id}")
                 return 0
-        prepared_logs = [{"_index": index_name, "_source": log} for log in logs]
+        prepared_logs = []
+        for log in logs:
+            if "_id" in log:
+                prepared_logs.append({
+                    "_id": log["_id"],
+                    "_index": index_name,
+                    "_source": log
+                })
+            else:
+                prepared_logs.append({
+                    "_index": index_name,
+                    "_source": log
+                })
         return self._bulk_index(prepared_logs)
 
     def get_policy(self, policy_name):
