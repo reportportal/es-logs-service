@@ -242,17 +242,29 @@ class EsClient:
             }
         })
 
-    def search_logs_by_pattern(self, search_query):
-        return self.get_logs_by_query(search_query["project"], {
-            "size": 1000,
-            "query": {
-                "regexp": {
-                    "log_message": {
-                        "value": search_query["query"],
-                    }
+    def get_regexp_query(self, field, query, case_insensitive=True):
+        return {
+            "regexp": {
+                field: {
+                    "value": query,
+                    "case_insensitive": case_insensitive
                 }
             }
-        })
+        }
+
+    def search_logs_by_pattern(self, search_query):
+        if " " in search_query["query"]:
+            query_terms = search_query["query"].split(" ")
+            query = {"span_near": {"clauses": [], "in_order": True, "slop": 0}}
+            query["span_near"]["clauses"] = [
+                {"span_multi": {"match": self.get_regexp_query("log_message", term)}}
+                for term in query_terms
+            ]
+        else:
+            query = self.get_regexp_query("log_message", search_query["query"])
+        return self.get_logs_by_query(
+            search_query["project"], {"size": 1000, "query": query}
+        )
 
     def initialize_ilm(self, project_id):
         index_name = self.get_index_name(project_id)
