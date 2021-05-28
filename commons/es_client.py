@@ -230,7 +230,7 @@ class EsClient:
             success_message=f"Deleted logs in range {start_date, end_date} from {es_index_name}",
             error_message=f"Unable to delete logs in range {start_date, end_date} from {es_index_name}",
         )
-        return delete_response["deleted"]
+        return delete_response["deleted"] if "deleted" in delete_response else 0
 
     def search_logs(self, search_query):
         return self.get_logs_by_query(search_query["project"], {

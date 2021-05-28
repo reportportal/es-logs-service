@@ -16,9 +16,31 @@
 
 import re
 from urllib.parse import urlparse
+import string
 
 
 def remove_credentials_from_url(url):
     parsed_url = urlparse(url)
     new_netloc = re.sub("^.+?:.+?@", "", parsed_url.netloc)
     return url.replace(parsed_url.netloc, new_netloc)
+
+
+def split_words(text, min_word_length=0, only_unique=False, split_urls=True,
+                remove_all_punctuation=False, to_lower=False):
+    all_unique_words = set()
+    all_words = []
+    translate_map = {}
+    for punct in string.punctuation + "<>{}[];=()'\"":
+        if remove_all_punctuation or (punct != "." and punct != "_" and (split_urls or punct not in ["/", "\\"])):
+            translate_map[punct] = " "
+    text = text.translate(text.maketrans(translate_map)).strip().strip(".")
+    for word_part in text.split():
+        word_part = word_part.strip().strip(".")
+        if to_lower:
+            word_part = word_part.lower()
+        for w in word_part.split():
+            if w != "" and len(w) >= min_word_length:
+                if not only_unique or w not in all_unique_words:
+                    all_unique_words.add(w)
+                    all_words.append(w)
+    return all_words

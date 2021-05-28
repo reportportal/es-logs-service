@@ -243,8 +243,15 @@ class PostgresClient:
             logs = index_query["logs"]
             project_id = index_query["project"]
             objects = []
+            used_columns = []
             for obj in logs:
                 obj_row = []
+                if "id" in obj:
+                    obj_row.append(obj["id"])
+                    if not len(used_columns):
+                        used_columns = ["id"] + columns
+                if not len(used_columns):
+                    used_columns = columns
                 for column in columns:
                     if column == "project":
                         obj_row.append(project_id)
@@ -252,9 +259,9 @@ class PostgresClient:
                         obj_row.append(obj[column])
                 objects.append(obj_row)
             insert_query = f"""
-                INSERT INTO {self.rp_logs_name} ({",".join(columns)})
+                INSERT INTO {self.rp_logs_name} ({",".join(used_columns)})
                 VALUES """
-            values_pattern = f"""({",".join(["%s"] * len(columns))})"""
+            values_pattern = f"""({",".join(["%s"] * len(used_columns))})"""
             return self.insert_to_db(insert_query, values_pattern, objects)
         return 0
 

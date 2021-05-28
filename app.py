@@ -32,7 +32,7 @@ APP_CONFIG = {
     "postgresDatabase":  os.getenv("POSTGRES_DB", "reportportal"),
     "postgresHost":      os.getenv("POSTGRES_HOST", "localhost"),
     "postgresPort":      os.getenv("POSTGRES_PORT", 5432),
-    "databaseType":      os.getenv("DATABASE_TYPE", "elasticsearch")
+    "databaseType":      os.getenv("DATABASE_TYPE", "postgres")
 }
 
 

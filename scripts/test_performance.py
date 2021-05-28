@@ -9,8 +9,10 @@ import requests
 import json
 import pickle
 sys.path.append('../commons')
+sys.path.append('../utils')
 
 import object_transformer
+import utils
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_size', default=100)
@@ -30,6 +32,7 @@ print("Database type: ", args.database_type)
 print("Data folder: ", args.data_folder)
 print("Metrics folder: ", args.metrics_folder)
 
+DATES_RANGE_NUM = 200
 
 def load_available_log_messages(data_folder):
     _object_transformer = object_transformer.ObjectTransformer(data_folder)
@@ -53,6 +56,21 @@ def make_logs_post_request(endpoint, body):
         data=json.dumps(body),
         headers={"Content-type": "application/json", "Accept": "text/plain"},
     ).__dict__
+
+
+def make_logs_post_request_with_returned_data(endpoint, body):
+    res = requests.post(
+        f"http://localhost:5010/{endpoint}",
+        data=json.dumps(body),
+        headers={"Content-type": "application/json", "Accept": "text/plain"},
+    )
+    data = []
+    try:
+        data = res.content.decode("utf-8")
+        data = json.loads(data, strict=False)
+    except:
+        data = []
+    return data, res.reason
 
 
 def get_performance_result_template(results):
@@ -86,6 +104,7 @@ def choose_ids(existing_ids, num_ids):
         log_ids.append(int(x_))
     return log_ids
 
+
 def get_logs_by_ids(num_queries, project_id):
     performance_result = []
     existing_ids = list(range(args.data_size))
@@ -108,29 +127,58 @@ def search_logs(num_queries, project_id):
     performance_result = []
     for query in range(num_queries):
         str_query = pool_log_messages[np.random.randint(0, len_pool_messages)]
-        str_query = " ".join(str_query.split()[:np.random.randint(5, 20)])
+        words_in_query = str_query.split()
+        if len(words_in_query) <= 5:
+            start_pos = 0
+        else:
+            start_pos = np.random.randint(0, len(words_in_query) - 5)
+        str_query = " ".join(words_in_query[start_pos:start_pos+np.random.randint(5, 20)])
+        if args.database_type == "postgres":
+            for symbol in "\\!":
+                str_query = str_query.replace(symbol, "\\" + symbol)
+        print(str_query)
         start_time = time.time()
-        make_logs_post_request("search_logs", {"query": str_query, "project": project_id})
+        res, reason = make_logs_post_request_with_returned_data("search_logs", {"query": str_query, "project": project_id})
+        print(res)
+        print(len(res))
+        print(reason)
         time_spent = time.time() - start_time
-        performance_result.append(time_spent)
+        performance_result.append({"query": str_query, "time_spent": time_spent, "res_num": len(res), "error": reason})
     return get_performance_result_template(performance_result)
+
+
+def prepare_query(database_type, str_query):
+    split_words_ = []
+    if database_type == "elasticsearch":
+        str_query = pool_log_messages[np.random.randint(0, len_pool_messages)]
+        split_words_ = utils.split_words(str_query)
+    if database_type == "postgres":
+        for symbol in "\\[]{}()?.+*^$|!":
+            str_query = str_query.replace(symbol, "\\" + symbol)
+        split_words_ = str_query.split()
+    words_chosen = []
+    for w in split_words_[:np.random.randint(5, 10)]:
+        if np.random.random() >= 0.3:
+            words_chosen.append(w)
+        else:
+            words_chosen.append(w[:np.random.randint(1, 5)] + "*")
+    str_query = " ".join(words_chosen)
+    return str_query
 
 
 def search_logs_by_pattern(num_queries, project_id):
     performance_result = []
     for query in range(num_queries):
         str_query = pool_log_messages[np.random.randint(0, len_pool_messages)]
-        words_chosen = []
-        for w in str_query.split()[:np.random.randint(5, 40)]:
-            if np.random.random() >= 0.3:
-                words_chosen.append(w)
-            else:
-                words_chosen.append(w[:np.random.randint(1, 5)] + "*")
-        str_query = " ".join(words_chosen)
+        str_query = prepare_query(args.database_type, str_query)
+        print(str_query)
         start_time = time.time()
-        make_logs_post_request("search_logs_by_pattern", {"query": str_query, "project": project_id})
+        res, reason = make_logs_post_request_with_returned_data("search_logs_by_pattern", {"query": str_query, "project": project_id})
+        print(res)
+        print(len(res))
+        print(reason)
         time_spent = time.time() - start_time
-        performance_result.append(time_spent)
+        performance_result.append({"query": str_query, "time_spent": time_spent, "res_num": len(res), "error": reason})
     return get_performance_result_template(performance_result)
 
 
@@ -157,16 +205,19 @@ def delete_logs(num_queries, project_id):
 def delete_logs_by_date(num_queries, project_id):
     performance_result = []
     for query in range(num_queries):
-        start_date_offset = np.random.randint(100, 200)
+        start_date_offset = np.random.randint(5, DATES_RANGE_NUM - 2)
+        offset_between_dates = 2
         start_date = datetime.datetime.now() - datetime.timedelta(days=start_date_offset)
-        end_date_offset = np.random.randint(5, start_date_offset - 10)
-        end_date = datetime.datetime.now() - datetime.timedelta(days=end_date_offset)
+        end_date = datetime.datetime.now() - datetime.timedelta(days=start_date_offset-offset_between_dates)
+        print(start_date)
+        print(end_date)
         start_time = time.time()
-        deleted_num = make_logs_post_request(
+        make_logs_post_request(
             "delete_logs_by_date",
             {"start_date": start_date.strftime("%Y-%m-%d"),
              "end_date": end_date.strftime("%Y-%m-%d"),
              "project": project_id})
+        deleted_num = args.data_size // DATES_RANGE_NUM * offset_between_dates
         time_spent = time.time() - start_time
         make_logs_post_request(
             "index_logs", {"logs": generate_logs(deleted_num, add_id=False), "project": project_id})
@@ -183,7 +234,7 @@ def generate_logs(num, log_ids=None, add_id=True):
         cur_generated += 1
         if cur_generated % 100000 == 0:
             print("Gathered %d logs" % cur_generated)
-        cur_date = datetime.datetime.now() - datetime.timedelta(days=np.random.randint(1, 200))
+        cur_date = datetime.datetime.now() - datetime.timedelta(days=np.random.randint(1, DATES_RANGE_NUM))
         obj = {
                 "uuid": str(uuid.uuid4()),
                 "log_time": cur_date.strftime("%Y-%m-%d %H:%M:%S"),
