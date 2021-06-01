@@ -203,6 +203,7 @@ def delete_logs(num_queries, project_id):
 
 def delete_logs_by_date(num_queries, project_id):
     performance_result = []
+    reindexing_start_id = 20000000
     for query in range(num_queries):
         if query % 10 == 0:
             print("Queried %d requests" % query)
@@ -218,10 +219,14 @@ def delete_logs_by_date(num_queries, project_id):
             {"start_date": start_date.strftime("%Y-%m-%d"),
              "end_date": end_date.strftime("%Y-%m-%d"),
              "project": project_id})
-        deleted_num = args.data_size // DATES_RANGE_NUM * offset_between_dates
         time_spent = time.time() - start_time
+        deleted_num = args.data_size // DATES_RANGE_NUM * offset_between_dates
+        reindexing_ids = list(range(reindexing_start_id, reindexing_start_id + deleted_num))
+        reindexing_start_id = reindexing_start_id + deleted_num
         make_logs_post_request(
-            "index_logs", {"logs": generate_logs(deleted_num, add_id=False), "project": project_id})
+            "index_logs", {"logs": generate_logs(deleted_num,
+                                                 log_ids=reindexing_ids),
+                           "project": project_id})
         performance_result.append(time_spent)
     return get_performance_result_template(performance_result)
 
