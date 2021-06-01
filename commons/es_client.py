@@ -135,7 +135,7 @@ class EsClient:
                 return 0
         return 0
 
-    def get_logs_by_query(self, project, query):
+    def get_logs_by_query(self, project, query, max_num=100):
         es_index_name = self.get_index_name(project)
         if not self.index_exists(es_index_name):
             return []
@@ -146,7 +146,7 @@ class EsClient:
             log = Log(**res["_source"])
             log.id = res["_id"]
             logs.append(log)
-            if len(logs) >= 1000:
+            if len(logs) >= max_num:
                 break
         return logs
 
@@ -234,13 +234,13 @@ class EsClient:
 
     def search_logs(self, search_query):
         return self.get_logs_by_query(search_query["project"], {
-            "size": 1000,
+            "size": 100,
             "query": {
                 "match": {
                     "log_message": search_query["query"]
                 }
             }
-        })
+        }, max_num=100)
 
     def get_regexp_query(self, field, query, case_insensitive=True):
         return {
@@ -263,7 +263,7 @@ class EsClient:
         else:
             query = self.get_regexp_query("log_message", search_query["query"])
         return self.get_logs_by_query(
-            search_query["project"], {"size": 1000, "query": query}
+            search_query["project"], {"size": 100, "query": query}, max_num=100
         )
 
     def initialize_ilm(self, project_id):

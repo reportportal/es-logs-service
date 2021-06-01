@@ -197,11 +197,10 @@ class PostgresClient:
         return delete_res
 
     def search_logs(self, search_query):
-        query = " | ".join(search_query["query"].split())
         return self.transform_result_to_logs(
             self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
-                WHERE to_tsvector(log_message) @@ to_tsquery('{query}') AND
-                project={search_query["project"]} LIMIT 1000"""))
+                WHERE to_tsvector(log_message) @@ websearch_to_tsquery('{search_query["query"]}') AND
+                project={search_query["project"]} LIMIT 100"""))
 
     def search_logs_by_pattern(self, search_query):
         regexp_pattern = search_query["query"]
@@ -211,7 +210,7 @@ class PostgresClient:
               FROM {self.rp_logs_name}
              WHERE log_message ~ '{regexp_pattern}'
                    AND project = {project_id}
-             LIMIT 1000
+             LIMIT 100
         """
         return self.transform_result_to_logs(self.query_db(query))
 

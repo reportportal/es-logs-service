@@ -132,10 +132,9 @@ def search_logs(num_queries, project_id):
             start_pos = 0
         else:
             start_pos = np.random.randint(0, len(words_in_query) - 5)
-        str_query = " ".join(words_in_query[start_pos:start_pos+np.random.randint(5, 20)])
+        str_query = " ".join(words_in_query[start_pos:start_pos+np.random.randint(5, 10)])
         if args.database_type == "postgres":
-            for symbol in "\\!":
-                str_query = str_query.replace(symbol, "\\" + symbol)
+            str_query = str_query.replace("'", "\"")
         print(str_query)
         start_time = time.time()
         res, reason = make_logs_post_request_with_returned_data("search_logs", {"query": str_query, "project": project_id})
@@ -161,7 +160,7 @@ def prepare_query(database_type, str_query):
         if np.random.random() >= 0.3:
             words_chosen.append(w)
         else:
-            words_chosen.append(w[:np.random.randint(1, 5)] + "*")
+            words_chosen.append(w[:np.random.randint(1, 5)] + ".*")
     str_query = " ".join(words_chosen)
     return str_query
 
@@ -205,6 +204,8 @@ def delete_logs(num_queries, project_id):
 def delete_logs_by_date(num_queries, project_id):
     performance_result = []
     for query in range(num_queries):
+        if query % 10 == 0:
+            print("Queried %d requests" % query)
         start_date_offset = np.random.randint(5, DATES_RANGE_NUM - 2)
         offset_between_dates = 2
         start_date = datetime.datetime.now() - datetime.timedelta(days=start_date_offset)
