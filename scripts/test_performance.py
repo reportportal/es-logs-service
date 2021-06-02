@@ -110,15 +110,23 @@ def get_logs_by_ids(num_queries, project_id):
     existing_ids = list(range(args.data_size))
     for num_ids in [1, 10, 100, 500, 1000, 5000, 10000]:
         results = []
+        results_cache = []
         for query in range(num_queries):
             log_ids = choose_ids(existing_ids, num_ids)
             start_time = time.time()
             make_logs_post_request("get_logs_by_ids", {"ids": log_ids, "project": project_id})
             time_spent = time.time() - start_time
             results.append(time_spent)
+            results_cache_temp = []
+            for i in range(3):
+                start_time = time.time()
+                make_logs_post_request("get_logs_by_ids", {"ids": log_ids, "project": project_id})
+                results_cache_temp.append(time.time() - start_time)
+            results_cache.append(results_cache_temp)
         performance_result.append({
             "ids_size": num_ids,
-            "time_spent": results
+            "time_spent": results,
+            "time_spent_cache": results_cache
         })
     return get_performance_result_template(performance_result)
 
@@ -193,7 +201,7 @@ def delete_logs(num_queries, project_id):
             time_spent = time.time() - start_time
             results.append(time_spent)
             make_logs_post_request(
-                "index_logs", {"logs": generate_logs(num_ids, log_ids), "project": project_id})
+                "index_logs", {"logs": generate_logs(num_ids, log_ids=log_ids, add_id=True), "project": project_id})
         performance_result.append({
             "ids_size": num_ids,
             "time_spent": results
@@ -203,7 +211,6 @@ def delete_logs(num_queries, project_id):
 
 def delete_logs_by_date(num_queries, project_id):
     performance_result = []
-    reindexing_start_id = 20000000
     for query in range(num_queries):
         if query % 10 == 0:
             print("Queried %d requests" % query)
@@ -221,17 +228,14 @@ def delete_logs_by_date(num_queries, project_id):
              "project": project_id})
         time_spent = time.time() - start_time
         deleted_num = args.data_size // DATES_RANGE_NUM * offset_between_dates
-        reindexing_ids = list(range(reindexing_start_id, reindexing_start_id + deleted_num))
-        reindexing_start_id = reindexing_start_id + deleted_num
         make_logs_post_request(
-            "index_logs", {"logs": generate_logs(deleted_num,
-                                                 log_ids=reindexing_ids),
+            "index_logs", {"logs": generate_logs(deleted_num),
                            "project": project_id})
         performance_result.append(time_spent)
     return get_performance_result_template(performance_result)
 
 
-def generate_logs(num, log_ids=None, add_id=True):
+def generate_logs(num, log_ids=None, add_id=False):
     all_logs = []
     if log_ids is None:
         log_ids = list(range(num))
