@@ -148,6 +148,7 @@ class EsClient:
         es_index_name = self.get_index_name(project)
         if not self.index_exists(es_index_name):
             return []
+        start_time = time()
         logs = []
         for res in elasticsearch.helpers.scan(self.es_client,
                                               query=query,
@@ -157,6 +158,7 @@ class EsClient:
             logs.append(log)
             if len(logs) >= max_num:
                 break
+        logger.info("Finished querying for %.2f s", time() - start_time)
         return logs
 
     def get_ids_query(self, ids):
