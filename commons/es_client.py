@@ -41,7 +41,16 @@ BASIC_TEMPLATE = {
         "properties": {
             "uuid": {"type": "keyword"},
             "log_time": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss"},
-            "log_message": {"type": "text"},
+            "log_message": {
+                "type": "text",
+                "analyzer": "standard",
+                "fields": {
+                    "no_tokenization": {
+                        "type": "text",
+                        "analyzer": "keyword",
+                    }
+                }
+            },
             "item_id": {"type": "integer"},
             "launch_id": {"type": "integer"},
             "last_modified": {"type": "date", "format": "yyyy-MM-dd HH:mm:ss"},
@@ -242,7 +251,7 @@ class EsClient:
             }
         }, max_num=100)
 
-    def get_regexp_query(self, field, query, case_insensitive=True):
+    def get_regexp_query(self, field, query, case_insensitive=False):
         return {
             "regexp": {
                 field: {
@@ -253,15 +262,7 @@ class EsClient:
         }
 
     def search_logs_by_pattern(self, search_query):
-        if " " in search_query["query"]:
-            query_terms = search_query["query"].split(" ")
-            query = {"span_near": {"clauses": [], "in_order": True, "slop": 0}}
-            query["span_near"]["clauses"] = [
-                {"span_multi": {"match": self.get_regexp_query("log_message", term)}}
-                for term in query_terms
-            ]
-        else:
-            query = self.get_regexp_query("log_message", search_query["query"])
+        query = self.get_regexp_query("log_message.no_tokenization", search_query["query"])
         return self.get_logs_by_query(
             search_query["project"], {"size": 100, "query": query}, max_num=100
         )
