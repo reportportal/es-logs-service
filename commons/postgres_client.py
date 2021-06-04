@@ -17,6 +17,7 @@ import logging
 import psycopg2
 import re
 from commons import launch_objects
+from time import time
 
 logger = logging.getLogger("esLogsService.postgresClient")
 
@@ -143,10 +144,12 @@ class PostgresClient:
         return objects
 
     def get_logs_by_ids(self, logs_request):
-        return self.transform_result_to_logs(
-            self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
+        start_time = time()
+        result = self.query_db(f"""SELECT id,{",".join(self.rp_logs_columns)} FROM {self.rp_logs_name}
                 WHERE id IN ({",".join([str(_id) for _id in logs_request["ids"]])})
-                    AND project={logs_request["project"]} LIMIT 1000"""))
+                    AND project={logs_request["project"]} LIMIT 1000""")
+        logger.info("Finished querying for %.2f s", time() - start_time)
+        return self.transform_result_to_logs(result)
 
     def get_logs_by_test_item(self, logs_request):
         return self.transform_result_to_logs(

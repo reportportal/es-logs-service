@@ -116,12 +116,15 @@ def get_logs_by_ids(num_queries, project_id):
             start_time = time.time()
             make_logs_post_request("get_logs_by_ids", {"ids": log_ids, "project": project_id})
             time_spent = time.time() - start_time
+            print("Time spent ", time_spent)
             results.append(time_spent)
             results_cache_temp = []
             for i in range(3):
                 start_time = time.time()
                 make_logs_post_request("get_logs_by_ids", {"ids": log_ids, "project": project_id})
-                results_cache_temp.append(time.time() - start_time)
+                time_spent = time.time() - start_time
+                print("Time spent with cache ", time_spent)
+                results_cache_temp.append(time_spent)
             results_cache.append(results_cache_temp)
         performance_result.append({
             "ids_size": num_ids,
@@ -169,7 +172,10 @@ def prepare_query(database_type, str_query):
             words_chosen.append(w)
         else:
             words_chosen.append(w[:np.random.randint(1, 5)] + ".*")
-    str_query = " ".join(words_chosen)
+    if database_type == "elasticsearch":
+        str_query = ".*"+".*".join(words_chosen)+".*"
+    else:
+        str_query = " ".join(words_chosen)
     return str_query
 
 
