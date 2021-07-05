@@ -34,6 +34,7 @@ print("Metrics folder: ", args.metrics_folder)
 
 DATES_RANGE_NUM = 200
 
+
 def load_available_log_messages(data_folder):
     _object_transformer = object_transformer.ObjectTransformer(data_folder)
     test_items, _ = _object_transformer.transform_objects(None, number=10000)
@@ -68,7 +69,7 @@ def make_logs_post_request_with_returned_data(endpoint, body):
     try:
         data = res.content.decode("utf-8")
         data = json.loads(data, strict=False)
-    except:
+    except: # noqa
         data = []
     return data, res.reason
 
@@ -143,17 +144,19 @@ def search_logs(num_queries, project_id):
             start_pos = 0
         else:
             start_pos = np.random.randint(0, len(words_in_query) - 5)
-        str_query = " ".join(words_in_query[start_pos:start_pos+np.random.randint(5, 10)])
+        str_query = " ".join(words_in_query[start_pos: start_pos + np.random.randint(5, 10)])
         if args.database_type == "postgres":
             str_query = str_query.replace("'", "\"")
         print(str_query)
         start_time = time.time()
-        res, reason = make_logs_post_request_with_returned_data("search_logs", {"query": str_query, "project": project_id})
+        res, reason = make_logs_post_request_with_returned_data(
+            "search_logs", {"query": str_query, "project": project_id})
         print(res)
         print(len(res))
         print(reason)
         time_spent = time.time() - start_time
-        performance_result.append({"query": str_query, "time_spent": time_spent, "res_num": len(res), "error": reason})
+        performance_result.append(
+            {"query": str_query, "time_spent": time_spent, "res_num": len(res), "error": reason})
     return get_performance_result_template(performance_result)
 
 
@@ -173,7 +176,7 @@ def prepare_query(database_type, str_query):
         else:
             words_chosen.append(w[:np.random.randint(1, 5)] + ".*")
     if database_type == "elasticsearch":
-        str_query = ".*"+".*".join(words_chosen)+".*"
+        str_query = ".*" + ".*".join(words_chosen) + ".*"
     else:
         str_query = " ".join(words_chosen)
     return str_query
@@ -186,12 +189,14 @@ def search_logs_by_pattern(num_queries, project_id):
         str_query = prepare_query(args.database_type, str_query)
         print(str_query)
         start_time = time.time()
-        res, reason = make_logs_post_request_with_returned_data("search_logs_by_pattern", {"query": str_query, "project": project_id})
+        res, reason = make_logs_post_request_with_returned_data(
+            "search_logs_by_pattern", {"query": str_query, "project": project_id})
         print(res)
         print(len(res))
         print(reason)
         time_spent = time.time() - start_time
-        performance_result.append({"query": str_query, "time_spent": time_spent, "res_num": len(res), "error": reason})
+        performance_result.append(
+            {"query": str_query, "time_spent": time_spent, "res_num": len(res), "error": reason})
     return get_performance_result_template(performance_result)
 
 
@@ -207,7 +212,8 @@ def delete_logs(num_queries, project_id):
             time_spent = time.time() - start_time
             results.append(time_spent)
             make_logs_post_request(
-                "index_logs", {"logs": generate_logs(num_ids, log_ids=log_ids, add_id=True), "project": project_id})
+                "index_logs",
+                {"logs": generate_logs(num_ids, log_ids=log_ids, add_id=True), "project": project_id})
         performance_result.append({
             "ids_size": num_ids,
             "time_spent": results
@@ -223,7 +229,8 @@ def delete_logs_by_date(num_queries, project_id):
         start_date_offset = np.random.randint(5, DATES_RANGE_NUM - 2)
         offset_between_dates = 2
         start_date = datetime.datetime.now() - datetime.timedelta(days=start_date_offset)
-        end_date = datetime.datetime.now() - datetime.timedelta(days=start_date_offset-offset_between_dates)
+        end_date = datetime.datetime.now() - datetime.timedelta(
+            days=start_date_offset - offset_between_dates)
         print(start_date)
         print(end_date)
         start_time = time.time()
@@ -252,15 +259,15 @@ def generate_logs(num, log_ids=None, add_id=False):
             print("Gathered %d logs" % cur_generated)
         cur_date = datetime.datetime.now() - datetime.timedelta(days=np.random.randint(1, DATES_RANGE_NUM))
         obj = {
-                "uuid": str(uuid.uuid4()),
-                "log_time": cur_date.strftime("%Y-%m-%d %H:%M:%S"),
-                "log_message": pool_log_messages[np.random.randint(0, len_pool_messages)],
-                "item_id": int(np.random.randint(1000, 10000)),
-                "launch_id": int(np.random.randint(100, 1000)),
-                "last_modified": cur_date.strftime("%Y-%m-%d %H:%M:%S"),
-                "log_level": int(np.random.choice([20000, 30000, 40000, 50000])),
-                "attachment_id": int(np.random.randint(1000, 5001)),
-            }
+            "uuid": str(uuid.uuid4()),
+            "log_time": cur_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "log_message": pool_log_messages[np.random.randint(0, len_pool_messages)],
+            "item_id": int(np.random.randint(1000, 10000)),
+            "launch_id": int(np.random.randint(100, 1000)),
+            "last_modified": cur_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "log_level": int(np.random.choice([20000, 30000, 40000, 50000])),
+            "attachment_id": int(np.random.randint(1000, 5001)),
+        }
         if add_id:
             obj["id"] = _id
         all_logs.append(obj)

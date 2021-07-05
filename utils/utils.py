@@ -31,7 +31,8 @@ def split_words(text, min_word_length=0, only_unique=False, split_urls=True,
     all_words = []
     translate_map = {}
     for punct in string.punctuation + "<>{}[];=()'\"":
-        if remove_all_punctuation or (punct != "." and punct != "_" and (split_urls or punct not in ["/", "\\"])):
+        if remove_all_punctuation or\
+                (punct != "." and punct != "_" and (split_urls or punct not in ["/", "\\"])):
             translate_map[punct] = " "
     text = text.translate(text.maketrans(translate_map)).strip().strip(".")
     for word_part in text.split():
